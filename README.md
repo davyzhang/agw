@@ -24,9 +24,9 @@ func AWSLambdaProxyHandler(lambdaEventMessage []byte ){
 
 ### The Full Picture
 To use it in the real project we need some more setups
- 1. AWS APIGateway **must** configured with lambda proxy mode, typically like {/proxy+} here's the [doc](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html) from aws
- 2. Use any wrapper to get the lambda proxy request string, which is a pure json data, you can get extract it from nodejs shim or python shim, personally I recommend [Apex](https://github.com/apex/apex) and [Go-Apex](https://github.com/apex/go-apex "Go-Apex")
- 3. Using any http router like lightening fast [Bone](https://github.com/go-zoo/bone) or popular and feature rich [Gorilla Mux](https://github.com/gorilla/mux) and even chaining libraries like [Alice](https://github.com/justinas/alice) to write your middlewares
+ 1. AWS APIGateway **must** be configured with lambda proxy mode, typically like {/proxy+} here's the [doc](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html) from aws
+ 2. Use any wrapper to get the lambda proxy request string, which is a pure json data, you can get it from nodejs shim or python shim, personally I recommend [Apex](https://github.com/apex/apex) and [Go-Apex](https://github.com/apex/go-apex "Go-Apex")
+ 3. Using any http router like lightning fast [Bone](https://github.com/go-zoo/bone) or popular and feature rich [Gorilla Mux](https://github.com/gorilla/mux) and even chaining libraries like [Alice](https://github.com/justinas/alice) to write your middlewares
 
 
 ### Practical Example
@@ -65,13 +65,18 @@ func main() {
 	w.(*agw.LPResponse).WriteBody(out)
 }
 ```
-- Since the AWS event message is evolving during the time, AGW used [simplejson](https://github.com/bitly/go-simplejson) as the main json parser to extract only the useful key and values.
+- Since the AWS event message is evolving during the time, AGW used [simplejson](https://github.com/bitly/go-simplejson) as the major json parser to extract only the useful key and values.
+- Read request json body using simplejson
+```go
+
+```
 - If returned body is string or number type, it will be returned as a plaintext instead of a json object with quotes
-- net.Context is working as expected.
+- Context is working as expected.
 
 ###TODO
 
  - More tests
+ - Comments
 
 ###License
 BSD licensed. See the LICENSE file for details.

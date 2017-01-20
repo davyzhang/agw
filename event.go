@@ -103,6 +103,10 @@ func (lpe *LambdaProxyEvent) JSONBody() (map[string]interface{}, error) {
 	return parseJSONType(body.MustMap()), nil
 }
 
+func (lpe *LambdaProxyEvent) Raw() *simplejson.Json {
+	return lpe.raw
+}
+
 func parseJSONType(m map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{}, len(m))
 	for k, v := range m {
