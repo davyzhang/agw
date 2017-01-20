@@ -36,7 +36,7 @@ func main() {
 	mux := bone.New()
 	cors := alice.New(agw.EnableCORS)
 	h := cors.Append(yourMiddleware)
-	mux.Get("/test", cors.ThenFunc(yourHandler)
+	mux.Get("/test", h.ThenFunc(yourHandler)
 
 	apex.HandleFunc(func(event json.RawMessage, ctx *apex.Context) (interface{}, error) {
 		//simplest way
