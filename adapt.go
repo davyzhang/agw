@@ -13,6 +13,9 @@ import (
 
 func composeURL(lpe *LambdaProxyEvent) string {
 	qs := lpe.QueryStringParameters()
+	if len(qs) <= 0 {
+		return lpe.Path()
+	}
 	return lpe.Path() + "?" + qs.Encode()
 }
 
