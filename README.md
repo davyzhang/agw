@@ -9,10 +9,10 @@ func testhandler(w http.ResponseWriter, r *http.Request) {
 	w.(*agw.LPResponse).WriteBody(map[string]string{"test": "test body"})
 }
 
-//use any exsiting router supporting the standard http.Handler 
-//like 	"github.com/gorilla/mux"
+//get aws request event message []byte from commdline from nodejs or whatever wrapper you are using
 func AWSLambdaProxyHandler(lambdaEventMessage []byte ){
-    //get aws request event message []byte
+	//use any exsiting router supporting the standard http.Handler 
+	//like 	"github.com/gorilla/mux"
     mux := mux.NewRouter()
     mux.HandleFunc("/test/hello", testhandler)
 
