@@ -66,10 +66,26 @@ func main() {
 }
 ```
 - Since the AWS event message is evolving during the time, AGW used [simplejson](https://github.com/bitly/go-simplejson) as the major json parser to extract only the useful key and values.
-- Read request json body using simplejson
+- Read request json body with simplejson or ParseJSONBody middleware 
 ```go
+func handler(w http.ResponseWriter, r *http.Request) {
+	sj, err := simplejson.NewFromReader(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+}
+//from middleware
+jBody := alice.New(agw.ParseJSONBody)
+mux.Post("/test", jBody.ThenFunc(handler))
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	b := r.Context().Value(agw.ContextKeyBody).(*simplejson.Json)
+	val1 := b.Get("yourkey").MustString()
+	//...
+}
 ```
+- 
 - If returned body is string or number type, it will be returned as a plaintext instead of a json object with quotes
 - Context is working as expected.
 
