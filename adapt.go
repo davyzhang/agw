@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
-	"util"
 
+	"encoding/json"
 	"io"
 )
 
@@ -124,7 +125,12 @@ func composeResp(resp *LPResponse) map[string]interface{} {
 	case string:
 		bd = t
 	default:
-		bd = util.MustJSON(resp.body)
+		bs, err := json.Marshal(resp.body)
+		if err != nil {
+			log.Printf("encode body error %+v", err)
+			return nil
+		}
+		bd = string(bs)
 	}
 	ret := map[string]interface{}{
 		"statusCode": resp.status,
@@ -146,6 +152,7 @@ func Process(b []byte, h http.Handler) (map[string]interface{}, error) {
 
 func ProcessEvent(lpe *LambdaProxyEvent, h http.Handler) (map[string]interface{}, error) {
 	req, err := ToHTTPRequest(lpe)
+	log.Printf("get path %s", lpe.Path())
 	if err != nil {
 		return nil, err
 	}

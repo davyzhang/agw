@@ -44,6 +44,6 @@ func Logging(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		st := time.Now()
 		h.ServeHTTP(w, r)
-		log.Printf("[%vs][%s:%q]", time.Since(st).Seconds(), r.Method, r.URL.String())
+		log.Printf("[%.05fs][%s:%q]", time.Since(st).Seconds(), r.Method, r.URL.String())
 	})
 }
