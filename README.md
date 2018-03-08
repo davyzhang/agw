@@ -55,7 +55,7 @@ func main() {
 
 ```
 
-###Notes
+### Notes
 
  - The ResponseWriter.Write([]byte) (int, error) is not going to work as normal http response due to the way how lambda and aws apigateway works
  - You have to type assert  ResponseWriter as (*agw.LPResponse) and use WriteBody(out) to set the return body 
@@ -89,10 +89,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 - If a returned body is a pure string or number, it will be returned as a plaintext instead of a json object with quotes
 - Context is working as expected.
 
-###TODO
+### TODO
 
  - More tests
  - Comments
 
-###License
+### License
 BSD licensed. See the LICENSE file for details.
