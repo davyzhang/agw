@@ -2,6 +2,7 @@ package agw
 
 import (
 	"context"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -31,11 +32,38 @@ func EnableCORS(h http.Handler) http.Handler {
 func ParseJSONBody(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sj, err := simplejson.NewFromReader(r.Body)
+		defer func() {
+			err := r.Body.Close()
+			if err != nil {
+				log.Printf("close http request body error %+v", err)
+				return
+			}
+		}()
 		if err != nil {
+			log.Printf("read body err %+v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		ctx := context.WithValue(r.Context(), ContextKeyBody, sj)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func ParseBodyBytes(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bs, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Printf("read body err %+v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		defer func() {
+			if err := r.Body.Close(); err != nil {
+				log.Printf("close http request error %+v", err)
+				return
+			}
+		}()
+		ctx := context.WithValue(r.Context(), ContextKeyBody, bs)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

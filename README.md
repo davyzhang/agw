@@ -24,8 +24,8 @@ func AWSLambdaProxyHandler(lambdaEventMessage []byte ){
 
 ### The Full Picture
 To use it in the real project we need some more setups
- 1. AWS APIGateway **must** be configured with lambda proxy mode, typically like {/proxy+} here's the [doc](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html) from aws
- 2. Use any wrapper to get the lambda proxy request string, which is a pure json data, you can get it from nodejs shim or python shim, personally I recommend [Apex](https://github.com/apex/apex) and [Go-Apex](https://github.com/apex/go-apex "Go-Apex")
+ 1. AWS APIGateway **must** be configured with lambda **proxy** mode, typically like {/proxy+} here's the [doc](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html) from aws
+ 2. Use any wrapper to get the lambda proxy request string, which is a pure json data, you can get it from nodejs shim or python shim. Personally I recommend [Apex](https://github.com/apex/apex) and [Go-Apex](https://github.com/apex/go-apex "Go-Apex")
  3. Using any http router like lightning fast [Bone](https://github.com/go-zoo/bone) or popular and feature rich [Gorilla Mux](https://github.com/gorilla/mux) and even chaining libraries like [Alice](https://github.com/justinas/alice) to write your middlewares
 
 
@@ -39,10 +39,10 @@ func main() {
 	mux.Get("/test", h.ThenFunc(yourHandler)
 
 	apex.HandleFunc(func(event json.RawMessage, ctx *apex.Context) (interface{}, error) {
-		//simplest way
+		//the simplest way
 		return agw.Process(event,mux)
 
-		//if you want to handle event before processing messages
+		//if you want to handle the event before processing messages
 		//lpe, err := agw.NewLambdaProxyEvent([]byte(event))
 		//if err != nil {
 		//	return nil, err
@@ -65,7 +65,7 @@ func main() {
 	w.(*agw.LPResponse).WriteBody(out)
 }
 ```
-- Since the AWS event message is evolving during the time, AGW used [simplejson](https://github.com/bitly/go-simplejson) as the major json parser to extract only the useful key and values.
+- Since the AWS event message is evolving during the time, AGW uses [simplejson](https://github.com/bitly/go-simplejson) as the major json parser to extract only the useful key and values.
 - Read request json body with simplejson or ParseJSONBody middleware 
 ```go
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 - 
-- If returned body is string or number type, it will be returned as a plaintext instead of a json object with quotes
+- If a returned body is a pure string or number, it will be returned as a plaintext instead of a json object with quotes
 - Context is working as expected.
 
 ###TODO

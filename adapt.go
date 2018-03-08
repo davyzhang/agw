@@ -124,6 +124,8 @@ func composeResp(resp *LPResponse) map[string]interface{} {
 	switch t := resp.body.(type) {
 	case string:
 		bd = t
+	case []byte:
+		bd = string(t)
 	default:
 		bs, err := json.Marshal(resp.body)
 		if err != nil {
