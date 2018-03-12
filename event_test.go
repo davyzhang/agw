@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var ev = `
+var ev = ` 
 {
     "resource": "/test1/{proxy+}",
     "path": "/test1/test",
@@ -53,6 +53,11 @@ var ev = `
 `[1:]
 
 func Test_apiGateParser_queryStringParameters(t *testing.T) {
+	var ev2 = `
+{
+	"queryStringParameters": null
+}
+`
 	uv1 := make(url.Values)
 	uv1.Add("k1", "v1")
 	uv1.Add("k2", "v2")
@@ -65,13 +70,14 @@ func Test_apiGateParser_queryStringParameters(t *testing.T) {
 		want   url.Values
 	}{
 		{"t1", fields{[]byte(ev)}, uv1},
+		{"t2", fields{[]byte(ev2)}, make(url.Values)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			agp := &apiGateParser{
+			agp := &APIGateParser{
 				content: tt.fields.content,
 			}
-			if got := agp.queryStringParameters(); !reflect.DeepEqual(got, tt.want) {
+			if got := agp.QueryStringParameters(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("apiGateParser.queryStringParameters() = %v, want %v", got, tt.want)
 			}
 		})
@@ -91,10 +97,10 @@ func Test_apiGateParser_url(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			agp := &apiGateParser{
+			agp := &APIGateParser{
 				content: tt.fields.content,
 			}
-			if got := agp.url(); got != tt.want {
+			if got := agp.Url(); got != tt.want {
 				t.Errorf("apiGateParser.url() = %v, want %v", got, tt.want)
 			}
 		})
@@ -114,11 +120,39 @@ func Test_apiGateParser_body(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			agp := &apiGateParser{
+			agp := &APIGateParser{
 				content: tt.fields.content,
 			}
-			if got := agp.body(); !reflect.DeepEqual(got, tt.want) {
+			if got := agp.Body(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("apiGateParser.body() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAPIGateParser_StageVariables(t *testing.T) {
+	var ev3 = `
+{
+	"stageVariables": null
+},`
+	type fields struct {
+		content []byte
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   map[string]string
+	}{
+		{"t1", fields{[]byte(ev1)}, map[string]string{"lbAlias": "current"}},
+		{"t2", fields{[]byte(ev3)}, map[string]string{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agp := &APIGateParser{
+				content: tt.fields.content,
+			}
+			if got := agp.StageVariables(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("APIGateParser.StageVariables() = %v, want %v", got, tt.want)
 			}
 		})
 	}

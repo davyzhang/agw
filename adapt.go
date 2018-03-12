@@ -129,9 +129,8 @@ func (lpr *LPResponse) composeResp() map[string]interface{} {
 	return ret
 }
 
-func Process(b []byte, h http.Handler) map[string]interface{} {
-	agp := newAPIGateParser(b)
-	buf := bytes.NewBuffer(agp.body())
-	req := newRequest(agp.method(), agp.url(), buf)
+func Process(agp EventParser, h http.Handler) interface{} {
+	buf := bytes.NewBuffer(agp.Body())
+	req := newRequest(agp.Method(), agp.Url(), buf)
 	return new(LPServer).Process(req, h)
 }

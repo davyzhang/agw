@@ -7,18 +7,21 @@ In short, the usage is
 //your standard http handler
 func testhandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Add("test", "test header")
-    w.(*agw.LPResponse).WriteBody(map[string]string{"test": "test body"}, false)
+    w.(*agw.LPResponse).WriteBody(map[string]string{
+        "test":    "test body",
+        "funcArn": agw.LambdaContext.InvokedFunctionArn, //can access context as global variable
+        "event":   string(agw.RawMessage),               //can access RawMessage as global variable
+    }, false)
 }
 
 func main() {
-    //use any exsiting router supporting the standard http.Handler 
+    //use any exsiting router supporting the standard http.Handler
     //like 	"github.com/gorilla/mux"
     mux := mux.NewRouter()
-    mux.HandleFunc("/test/hello", testhandler)
+    mux.HandleFunc("/test1/hello", testhandler)
     //lambda is from official sdk "github.com/aws/aws-lambda-go/lambda"
     lambda.Start(agw.Handler(mux))
 }
-
 ```
 
 ### The Full Picture
@@ -30,29 +33,36 @@ To use it in the real project we might need some more setups
 ### Complex example
 You can deploy this code to aws lambda and link it to apigateway to see how it works in test console of aws apigateway.
 ```go
-
 func handler1(w http.ResponseWriter, r *http.Request) {
-	p1 := bone.GetValue(r, "var")
-	bd := string(r.Context().Value(agw.ContextKeyBody).([]byte))
-	w.(*agw.LPResponse).WriteBody(map[string]string{"agent": r.UserAgent(), "var": p1, "bd": bd}, false)
+    p1 := bone.GetValue(r, "var")
+    bd := string(r.Context().Value(agw.ContextKeyBody).([]byte))
+    w.(*agw.LPResponse).WriteBody(map[string]string{
+        "agent": r.UserAgent(),
+        "var":   p1,
+        "bd":    bd,
+    }, false)
 }
 
 func main() {
-	mux := bone.New()
-	cors := alice.New(agw.Logging, agw.EnableCORS, agw.ParseBodyBytes)
-	mux.Post("/test1/:var", cors.ThenFunc(handler1))
+    mux := bone.New()
+    cors := alice.New(agw.Logging, agw.EnableCORS, agw.ParseBodyBytes)
+    mux.Post("/test1/:var", cors.ThenFunc(handler1))
 
-	lambda.Start(func() agw.GatewayHandler {
-		return func(ctx context.Context, event json.RawMessage) (map[string]interface{}, error) {
-			//deal with the different ctx and event,such as connecting to different db endpoint
-			//or setting up global variables
-			log.Printf("init here with %+v", ctx)
-			return agw.Process(event, mux), nil
-		}
-	}())
-}
-
+    lambda.Start(func() agw.GatewayHandler {
+        return func(ctx context.Context, event json.RawMessage) (interface{}, error) {
+            //might be useful to store ctx and event as global variable here
+            agp := agw.NewAPIGateParser(event)
+            lctx, _ := lambdacontext.FromContext(ctx)
+            //deal with the different ctx and event,such as connecting to different db endpoint
+            //or setting up global variables
+            log.Printf("init here with method %s, req ctx: %+v", agp.Method(), lctx)
+            return agw.Process(agp, mux), nil
+        }
+    }())
+} 
 ```
+
+
 
 ### Notes
 
@@ -62,7 +72,7 @@ func main() {
 ```go
  func MyHandler(w http.ResponseWriter, r *http.Request) {
     //your logic ....
-    w.(*agw.LPResponse).WriteBody(out, false)//false|true indicates whether it is encoded with base64 or not
+    w.(*agw.LPResponse).WriteBody(out, false)//false|true indicates whether the body is encoded with base64 or not
 }
 ```
 

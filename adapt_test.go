@@ -66,7 +66,7 @@ func TestGorillaMuxFlow(t *testing.T) {
 	r := mux.NewRouter()
 	r.HandleFunc("/test/hello", testhandler)
 
-	content := process([]byte(ev1), r)
+	content := Process(NewAPIGateParser([]byte(ev1)), r).(map[string]interface{})
 
 	type c struct {
 		want, got interface{}
@@ -86,7 +86,7 @@ func TestGorillaMuxFlow(t *testing.T) {
 func TestBoneFlow(t *testing.T) {
 	r := bone.New()
 	r.Post("/test/hello", http.HandlerFunc(testhandler))
-	content := process([]byte(ev1), r)
+	content := Process(NewAPIGateParser([]byte(ev1)), r).(map[string]interface{})
 
 	type c struct {
 		want, got interface{}
@@ -110,7 +110,7 @@ func testhandler2(w http.ResponseWriter, r *http.Request) {
 func TestWithContext(t *testing.T) {
 	r := bone.New()
 	r.Post("/test/:var", http.HandlerFunc(testhandler2))
-	content := process([]byte(ev1), r)
+	content := Process(NewAPIGateParser([]byte(ev1)), r).(map[string]interface{})
 
 	type c struct {
 		want, got interface{}
@@ -133,7 +133,7 @@ func TestWithAlice(t *testing.T) {
 	mux := bone.New()
 	cors := alice.New(EnableCORS)
 	mux.Post("/test/:var", cors.ThenFunc(testhandler3))
-	content := process([]byte(ev1), mux)
+	content := Process(NewAPIGateParser([]byte(ev1)), mux).(map[string]interface{})
 	log.Printf("content %+v", content)
 	type c struct {
 		want, got interface{}
