@@ -11,18 +11,63 @@ import (
 	"github.com/justinas/alice"
 )
 
+var ev1 = `
+{
+    "resource": "/test1/{proxy+}",
+    "path": "/test/hello",
+    "httpMethod": "POST",
+    "headers": {"Var":"hello"},
+    "queryStringParameters": {
+        "k1": "v1",
+        "k2": "v2"
+    },
+    "pathParameters": {
+        "proxy": "test"
+    },
+    "stageVariables": {
+        "lbAlias": "current"
+    },
+    "requestContext": {
+        "path": "/test1/{proxy+}",
+        "accountId": "095615327118",
+        "resourceId": "ybki7l",
+        "stage": "test-invoke-stage",
+        "requestId": "test-invoke-request",
+        "identity": {
+            "cognitoIdentityPoolId": null,
+            "cognitoIdentityId": null,
+            "apiKey": "test-invoke-api-key",
+            "cognitoAuthenticationType": null,
+            "userArn": "arn:aws:iam::095615327118:root",
+            "apiKeyId": "test-invoke-api-key-id",
+            "userAgent": "Apache-HttpClient/4.5.x (Java/1.8.0_144)",
+            "accountId": "095615327118",
+            "caller": "095615327118",
+            "sourceIp": "test-invoke-source-ip",
+            "accessKey": "ASIAJTPDCBBJQKRD3FMQ",
+            "cognitoAuthenticationProvider": null,
+            "user": "095615327118"
+        },
+        "resourcePath": "/test1/{proxy+}",
+        "httpMethod": "POST",
+        "apiId": "uorto7w779"
+    },
+    "body": "{\"test\":\"test body\"}",
+    "isBase64Encoded": false
+}
+`[1:]
+
 func testhandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("test", "test header")
-	w.(*LPResponse).WriteBody(map[string]string{"test": "test body"})
+	w.(*LPResponse).WriteBody(map[string]string{"test": "test body"}, false)
 }
 
 func TestGorillaMuxFlow(t *testing.T) {
 	r := mux.NewRouter()
 	r.HandleFunc("/test/hello", testhandler)
-	content, err := Process([]byte(ev), r)
-	if err != nil {
-		t.Errorf("flow test error %+v", err)
-	}
+
+	content := process([]byte(ev1), r)
+
 	type c struct {
 		want, got interface{}
 	}
@@ -40,11 +85,9 @@ func TestGorillaMuxFlow(t *testing.T) {
 
 func TestBoneFlow(t *testing.T) {
 	r := bone.New()
-	r.Get("/test/hello", http.HandlerFunc(testhandler))
-	content, err := Process([]byte(ev), r)
-	if err != nil {
-		t.Errorf("flow test error %+v", err)
-	}
+	r.Post("/test/hello", http.HandlerFunc(testhandler))
+	content := process([]byte(ev1), r)
+
 	type c struct {
 		want, got interface{}
 	}
@@ -66,11 +109,9 @@ func testhandler2(w http.ResponseWriter, r *http.Request) {
 
 func TestWithContext(t *testing.T) {
 	r := bone.New()
-	r.Get("/test/:var", http.HandlerFunc(testhandler2))
-	content, err := Process([]byte(ev), r)
-	if err != nil {
-		t.Errorf("flow test error %+v", err)
-	}
+	r.Post("/test/:var", http.HandlerFunc(testhandler2))
+	content := process([]byte(ev1), r)
+
 	type c struct {
 		want, got interface{}
 	}
@@ -84,49 +125,25 @@ func TestWithContext(t *testing.T) {
 	}
 }
 
+func testhandler3(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("param", bone.GetValue(r, "var"))
+	w.(*LPResponse).WriteBody(map[string]string{"test": "test body"}, false)
+}
 func TestWithAlice(t *testing.T) {
 	mux := bone.New()
 	cors := alice.New(EnableCORS)
-	mux.Get("/test/:var", cors.ThenFunc(testhandler))
-	content, err := Process([]byte(ev), mux)
-	if err != nil {
-		t.Errorf("flow test error %+v", err)
-	}
+	mux.Post("/test/:var", cors.ThenFunc(testhandler3))
+	content := process([]byte(ev1), mux)
 	log.Printf("content %+v", content)
 	type c struct {
 		want, got interface{}
 	}
 	ts := map[string]c{
-		"headers": c{map[string]string{"Var": "hello"}, content["headers"]}, //uppercase for header key
+		"headers": c{map[string]string{"Param": "hello", "Access-Control-Allow-Origin": "*"}, content["headers"]}, //uppercase for header key
 	}
 	for k, v := range ts {
 		if !reflect.DeepEqual(v.got, v.want) {
 			t.Errorf("%s check wrong, want %+v, got %+v", k, v.want, v.got)
 		}
-	}
-}
-
-func Test_composeURL(t *testing.T) {
-	lpe, err := NewLambdaProxyEvent([]byte(ev))
-	if err != nil {
-		t.Errorf("composeUrl error %+v", err)
-		return
-	}
-	type args struct {
-		lpe *LambdaProxyEvent
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{"t1", args{lpe}, "/test/hello?name=me"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := composeURL(tt.args.lpe); got != tt.want {
-				t.Errorf("composeURL() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }

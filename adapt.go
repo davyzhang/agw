@@ -4,45 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
-	"encoding/json"
 	"io"
+
+	jsoniter "github.com/json-iterator/go"
 )
-
-func composeURL(lpe *LambdaProxyEvent) string {
-	qs := lpe.QueryStringParameters()
-	if len(qs) <= 0 {
-		return lpe.Path()
-	}
-	return lpe.Path() + "?" + qs.Encode()
-}
-
-func bodyReader(lpe *LambdaProxyEvent) (io.Reader, error) {
-	bd, err := lpe.Body()
-	if bd == nil {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	s, err := bd.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return bytes.NewBuffer(s), nil
-}
-
-func ToHTTPRequest(lpe *LambdaProxyEvent) (*http.Request, error) {
-	bd, err := bodyReader(lpe)
-	if err != nil {
-		return nil, err
-	}
-	return newRequest(lpe.HTTPMethod(), composeURL(lpe), bd), nil
-}
 
 // newRequest is a helper function to create a new request with a method and url.
 // The request returned is a 'server' request as opposed to a 'client' one through
@@ -84,10 +52,12 @@ func newRequest(method, url string, bd io.Reader) *http.Request {
 	return req
 }
 
+//LPResponse mimic the behaviour of  http.ResponseWriter
 type LPResponse struct {
 	header http.Header
 	body   interface{}
 	status int
+	base64 bool
 }
 
 func NewLPResponse() *LPResponse {
@@ -100,9 +70,12 @@ func NewLPResponse() *LPResponse {
 func (lpr *LPResponse) Header() http.Header { return lpr.header }
 func (lpr *LPResponse) WriteHeader(s int)   { lpr.status = s }
 func (lpr *LPResponse) Write(b []byte) (int, error) {
-	return len(b), errors.New("Should not use this method on LPResponse, try WriteBody instead")
+	return len(b), errors.New("Should not use Write() method on LPResponse, try WriteBody instead")
 }
-func (lpr *LPResponse) WriteBody(i interface{}) { lpr.body = i }
+func (lpr *LPResponse) WriteBody(i interface{}, isBase64 bool) {
+	lpr.body = i
+	lpr.base64 = isBase64
+}
 
 type LPServer struct {
 }
@@ -110,54 +83,55 @@ type LPServer struct {
 func (lps *LPServer) Process(req *http.Request, handler http.Handler) map[string]interface{} {
 	resp := NewLPResponse()
 	handler.ServeHTTP(resp, req)
-	return composeResp(resp)
+	return resp.composeResp()
+	// return map[string]interface{}{
+	// 	"statusCode":      200,
+	// 	"headers":         nil,
+	// 	"body":            "test",
+	// 	"isBase64Encoded": false,
+	// }
 }
 
-func composeResp(resp *LPResponse) map[string]interface{} {
+/*
+{
+    "isBase64Encoded": true|false,
+    "statusCode": httpStatusCode,
+    "headers": { "headerName": "headerValue", ... },
+    "body": "..."
+}
+*/
+func (lpr *LPResponse) composeResp() map[string]interface{} {
 	// s int, h http.Header, body interface{}) map[string]interface{} {
 	mh := make(map[string]string)
-	for k, v := range resp.header {
+	for k, v := range lpr.header {
 		mh[k] = strings.Join(v, ";")
 	}
 
 	var bd string
-	switch t := resp.body.(type) {
+	switch t := lpr.body.(type) {
 	case string:
 		bd = t
 	case []byte:
 		bd = string(t)
 	default:
-		bs, err := json.Marshal(resp.body)
+		var err error
+		bd, err = jsoniter.MarshalToString(lpr.body)
 		if err != nil {
-			log.Printf("encode body error %+v", err)
-			return nil
+			panic(err)
 		}
-		bd = string(bs)
 	}
 	ret := map[string]interface{}{
-		"statusCode": resp.status,
-		"headers":    mh,
-		"body":       bd,
+		"statusCode":      lpr.status,
+		"headers":         mh,
+		"body":            bd,
+		"isBase64Encoded": lpr.base64,
 	}
 	return ret
 }
 
-var defaultServer = new(LPServer)
-
-func Process(b []byte, h http.Handler) (map[string]interface{}, error) {
-	lpe, err := NewLambdaProxyEvent(b)
-	if err != nil {
-		return nil, err
-	}
-	return ProcessEvent(lpe, h)
-}
-
-func ProcessEvent(lpe *LambdaProxyEvent, h http.Handler) (map[string]interface{}, error) {
-	req, err := ToHTTPRequest(lpe)
-	log.Printf("get path %s", lpe.Path())
-	if err != nil {
-		return nil, err
-	}
-
-	return defaultServer.Process(req, h), nil
+func Process(b []byte, h http.Handler) map[string]interface{} {
+	agp := newAPIGateParser(b)
+	buf := bytes.NewBuffer(agp.body())
+	req := newRequest(agp.method(), agp.url(), buf)
+	return new(LPServer).Process(req, h)
 }
