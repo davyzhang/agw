@@ -49,12 +49,9 @@ func newRequest(method, url string, headers map[string]string, bd io.Reader) *ht
 		panic(err)
 	}
 
-	h := http.Header{}
-	for key, header := range headers {
-		value := []string{header}
-		h[key] = value
+	for key, value := range headers {
+		req.Header.Add(key, value)
 	}
-	req.Header = h
 
 	return req
 }
