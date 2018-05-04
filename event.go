@@ -67,3 +67,12 @@ func (agp *APIGateParser) StageVariables() map[string]string {
 	}
 	return re
 }
+
+func (agp *APIGateParser) Headers() map[string]string {
+	re := map[string]string{}
+	sv := jsoniter.Get(agp.content, "headers")
+	if sv.ValueType() != jsoniter.NilValue {
+		sv.ToVal(&re)
+	}
+	return re
+}
