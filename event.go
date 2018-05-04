@@ -13,6 +13,7 @@ type EventParser interface {
 	Method() string
 	Url() string
 	StageVariables() map[string]string
+	Headers() map[string]string
 }
 
 type APIGateParser struct {
