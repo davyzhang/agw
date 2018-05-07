@@ -1,8 +1,10 @@
 package agw
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 
@@ -148,7 +150,8 @@ func TestWithAlice(t *testing.T) {
 	}
 }
 
-func TestWriteRequest(t *testing.T) {
+func TestWriteResponse(t *testing.T) {
+	bd1 := map[string]string{"key": "value"}
 	type args struct {
 		r        http.ResponseWriter
 		i        interface{}
@@ -158,11 +161,71 @@ func TestWriteRequest(t *testing.T) {
 		name string
 		args args
 	}{
-		{"t1", args{NewLPResponse(), nil, false}},
+		{"t1", args{NewLPResponse(), bd1, false}},
+		{"t2", args{}},
+		{"t3", args{}},
+		{"t4", args{}},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			WriteResponse(tt.args.r, tt.args.i, tt.args.isBase64)
-		})
+		if tt.name == "t1" {
+			t.Run(tt.name, func(t *testing.T) {
+				WriteResponse(tt.args.r, tt.args.i, tt.args.isBase64)
+				resp := tt.args.r.(*LPResponse).composeResp()
+				if resp["body"] != `{"key":"value"}` {
+					t.Error("body['key'] should be value")
+				}
+			})
+		}
+		if tt.name == "t2" {
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				WriteResponse(w, "test2", false)
+			}))
+			res, err := http.Get(svr.URL)
+			if err != nil {
+				t.Errorf("create http request error %+v", err)
+			}
+			bs, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				t.Errorf("read http test server error %+v", err)
+			}
+			if string(bs) != "test2" {
+				t.Errorf("expected %+v, found %+v", "test2", string(bs))
+			}
+		}
+		if tt.name == "t3" {
+			ret := "test bytes"
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				WriteResponse(w, []byte(ret), false)
+			}))
+			res, err := http.Get(svr.URL)
+			if err != nil {
+				t.Errorf("create http request error %+v", err)
+			}
+			bs, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				t.Errorf("read http test server error %+v", err)
+			}
+			if string(bs) != ret {
+				t.Errorf("expected %s, found %s", ret, string(bs))
+			}
+		}
+		if tt.name == "t4" {
+			ret := map[string]string{"key1": "value1"}
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				WriteResponse(w, ret, false)
+			}))
+			res, err := http.Get(svr.URL)
+			if err != nil {
+				t.Errorf("create http request error %+v", err)
+			}
+			bs, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				t.Errorf("read http test server error %+v", err)
+			}
+			if string(bs) != `{"key1":"value1"}` {
+				t.Errorf("expected %s, found %s", ret, string(bs))
+			}
+		}
 	}
 }

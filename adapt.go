@@ -140,6 +140,8 @@ func WriteResponse(w http.ResponseWriter, i interface{}, isBase64 bool) (int, er
 		switch i.(type) {
 		case []byte:
 			return w.Write(i.([]byte))
+		case string:
+			return w.Write([]byte(i.(string)))
 		default:
 			bs, err := jsoniter.Marshal(i)
 			if err != nil {
