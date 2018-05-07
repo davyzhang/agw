@@ -62,9 +62,55 @@ func main() {
 } 
 ```
 
-### Supporting Both dev and production environment
-
+### Support both standard http server and lambda environment
+It is a common scenario that debugging programs using local servers. However, aws lambda and apigateway have limited this possibility. We must upload the code and wait logs coming out in cloudwatch, which is slow and inconvenient. This library provides a little wrapper func for writing back data that can help to identify the real type of http.ResponseWriter and invoke corresponding write function.
+```go
+func handlerTest(w http.ResponseWriter, r *http.Request) { //you can pass this handler to a standard local http server
+    //your code...
+    agw.WriteResponse(w, ret, false) //corresponding Write function will be invoked
+})
 ```
+First you should build your standard http router
+```go
+func buildMux() http.Handler {
+	mux := bone.New()
+	cors := alice.New(agw.Logging, agw.EnableCORS)
+	mux.Get("/test", cors.ThenFunc(handlerTest))
+}
+```
+Typically, you have 2 entry points, one for local or standard server which looks like this:
+```go
+func DevHTTPEntry() {
+	srv := &http.Server{
+		Handler:      buildMux(),
+		Addr:         "localhost:9090",
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	log.Fatal(srv.ListenAndServe())
+}
+```
+And the lambda Entry:
+```go
+func LambdaHTTPEntry() {
+	lambda.Start(func() agw.GatewayHandler {
+		return func(ctx context.Context, event json.RawMessage) (interface{}, error) {
+			agp := agw.NewAPIGateParser(event)
+			return agw.Process(agp, buildMux()), nil
+		}
+	}())
+}
+```
+Switch them according to the environment
+```go
+func HTTPEntry() {
+	plat, ok := os.LookupEnv("APP_PLATFORM")
+	if !ok || plat != "Lambda" {
+		DevHTTPEntry()
+	} else {
+		LambdaHTTPEntry()
+	}
+}
 ```
 
 ### Notes
