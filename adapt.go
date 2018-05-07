@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"io"
@@ -84,12 +85,6 @@ func (lps *LPServer) Process(req *http.Request, handler http.Handler) map[string
 	resp := NewLPResponse()
 	handler.ServeHTTP(resp, req)
 	return resp.composeResp()
-	// return map[string]interface{}{
-	// 	"statusCode":      200,
-	// 	"headers":         nil,
-	// 	"body":            "test",
-	// 	"isBase64Encoded": false,
-	// }
 }
 
 /*
@@ -133,4 +128,23 @@ func Process(agp EventParser, h http.Handler) interface{} {
 	buf := bytes.NewBuffer(agp.Body())
 	req := newRequest(agp.Method(), agp.Url(), buf)
 	return new(LPServer).Process(req, h)
+}
+
+func WriteResponse(w http.ResponseWriter, i interface{}, isBase64 bool) (int, error) {
+	t := reflect.TypeOf(w).String()
+	if t == "*http.response" { //dirty hack to get internal type
+		switch i.(type) {
+		case []byte:
+			return w.Write(i.([]byte))
+		default:
+			bs, err := jsoniter.Marshal(i)
+			if err != nil {
+				return 0, err
+			}
+			return w.Write(bs)
+		}
+	} else if t == "*agw.LPResponse" {
+		w.(*LPResponse).WriteBody(i, isBase64)
+	}
+	return 0, nil
 }

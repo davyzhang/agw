@@ -147,3 +147,22 @@ func TestWithAlice(t *testing.T) {
 		}
 	}
 }
+
+func TestWriteRequest(t *testing.T) {
+	type args struct {
+		r        http.ResponseWriter
+		i        interface{}
+		isBase64 bool
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{"t1", args{NewLPResponse(), nil, false}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			WriteResponse(tt.args.r, tt.args.i, tt.args.isBase64)
+		})
+	}
+}
