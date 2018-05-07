@@ -17,7 +17,7 @@ import (
 // The request returned is a 'server' request as opposed to a 'client' one through
 // simulated write onto the wire and read off of the wire.
 // The differences between requests are detailed in the net/http package.
-func newRequest(method, url string, bd io.Reader) *http.Request {
+func newRequest(method, url string, headers map[string]string, bd io.Reader) *http.Request {
 	req, err := http.NewRequest(method, url, bd)
 	if err != nil {
 		panic(err)
@@ -48,6 +48,10 @@ func newRequest(method, url string, bd io.Reader) *http.Request {
 	req, err = http.ReadRequest(ioreader)
 	if err != nil {
 		panic(err)
+	}
+
+	for key, value := range headers {
+		req.Header.Add(key, value)
 	}
 
 	return req
@@ -126,7 +130,7 @@ func (lpr *LPResponse) composeResp() map[string]interface{} {
 
 func Process(agp EventParser, h http.Handler) interface{} {
 	buf := bytes.NewBuffer(agp.Body())
-	req := newRequest(agp.Method(), agp.Url(), buf)
+	req := newRequest(agp.Method(), agp.Url(), agp.Headers(), buf)
 	return new(LPServer).Process(req, h)
 }
 

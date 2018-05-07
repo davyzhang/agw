@@ -13,6 +13,7 @@ type EventParser interface {
 	Method() string
 	Url() string
 	StageVariables() map[string]string
+	Headers() map[string]string
 }
 
 type APIGateParser struct {
@@ -62,6 +63,15 @@ func (agp *APIGateParser) Url() string {
 func (agp *APIGateParser) StageVariables() map[string]string {
 	re := map[string]string{}
 	sv := jsoniter.Get(agp.content, "stageVariables")
+	if sv.ValueType() != jsoniter.NilValue {
+		sv.ToVal(&re)
+	}
+	return re
+}
+
+func (agp *APIGateParser) Headers() map[string]string {
+	re := map[string]string{}
+	sv := jsoniter.Get(agp.content, "headers")
 	if sv.ValueType() != jsoniter.NilValue {
 		sv.ToVal(&re)
 	}

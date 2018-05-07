@@ -11,7 +11,11 @@ var ev = `
     "resource": "/test1/{proxy+}",
     "path": "/test1/test",
     "httpMethod": "POST",
-    "headers": null,
+    "headers": {
+			"Accept": "*/*",
+			"CloudFront-Forwarded-Proto": "https",
+			"Content-Type": "application/json"
+		},
     "queryStringParameters": {
         "k1": "v1",
         "k2": "v2"
@@ -156,4 +160,23 @@ func TestAPIGateParser_StageVariables(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_apiGateParser_headers(t *testing.T) {
+	name := "t1"
+	rawJSON := []byte(ev)
+
+	want := make(map[string]string)
+	want["Accept"] = "*/*"
+	want["CloudFront-Forwarded-Proto"] = "https"
+	want["Content-Type"] = "application/json"
+
+	t.Run(name, func(t *testing.T) {
+		agp := &APIGateParser{
+			content: rawJSON,
+		}
+		if got := agp.Headers(); !reflect.DeepEqual(got, want) {
+			t.Errorf("apiGateParser.body() = %v, want %v", got, want)
+		}
+	})
 }
