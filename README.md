@@ -70,7 +70,7 @@ func handlerTest(w http.ResponseWriter, r *http.Request) { //you can pass this h
     agw.WriteResponse(w, ret, false) //corresponding Write function will be invoked
 })
 ```
-First build the standard http router
+Firstly, build the standard http router
 ```go
 func buildMux() http.Handler {
 	mux := bone.New()
@@ -90,7 +90,7 @@ func DevHTTPEntry() {
 	log.Fatal(srv.ListenAndServe())
 }
 ```
-and the other one is for lambda:
+and there's another one for lambda:
 ```go
 func LambdaHTTPEntry() {
 	lambda.Start(func() agw.GatewayHandler {
