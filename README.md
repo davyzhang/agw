@@ -30,7 +30,7 @@ To use it in the real project we might need some more setups
  2. Using any http router such as lightning fast [Bone](https://github.com/go-zoo/bone) or popular and feature rich [Gorilla Mux](https://github.com/gorilla/mux) and even with chaining libraries like [Alice](https://github.com/justinas/alice) to write your middlewares
 
 
-### Complex example
+### A complex example
 You can deploy this code to aws lambda and link it to apigateway to see how it works in test console of aws apigateway.
 ```go
 func handler1(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +75,8 @@ First you should build your standard http router
 func buildMux() http.Handler {
 	mux := bone.New()
 	cors := alice.New(agw.Logging, agw.EnableCORS)
-	mux.Get("/test", cors.ThenFunc(handlerTest))
+    mux.Get("/test", cors.ThenFunc(handlerTest))
+    mux.Options("/*", cors.ThenFunc(handlerDummy)) //handle option requests to support POST/PATCH.. requests
 }
 ```
 Typically, you have 2 entry points, one for local or standard server which looks like this:

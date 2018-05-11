@@ -22,6 +22,8 @@ AWS apigateway won't add them even after choosen to enable CORS in console,
 func EnableCORS(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Access-Control-Allow-Origin", "*")
+		w.Header().Add("Access-Control-Allow-Headers", "*")
+		w.Header().Add("Access-Control-Allow-Methods", "*")
 		h.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
