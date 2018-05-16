@@ -63,7 +63,7 @@ func main() {
 ```
 
 ### Support both standard http server and the lambda environment
-It is a common scenario that debugging programs using local servers. However, aws lambda and apigateway have limited this possibility. We must upload the code and wait logs coming out in cloudwatch, which is slow and inconvenient. This library provides a little wrapper func for writing back data that can help to identify the real type of http.ResponseWriter and invoke corresponding write function.
+It is a common scenario that debugging programs with local servers. However, aws lambda and apigateway have limited this possibility. We must upload the code and wait logs coming out in cloudwatch, which is slow and inconvenient. This library provides a little wrapper func for writing back data that can help to identify the real type of http.ResponseWriter and invoke corresponding write function.
 ```go
 func handlerTest(w http.ResponseWriter, r *http.Request) { //you can pass this handler to a standard local http server
     //your code...
