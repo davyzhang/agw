@@ -1,6 +1,6 @@
 
 # Route AWS APIGateway Requests with ease
- AGW transform AWS lambda event message to standard http.Request which can make it easy to work with existing http routers and chaining libraries. With AWS's native support for golang wrapper, shim like nodejs or python is no longer needed.
+ AGW transforms AWS lambda event message to the standard http.Request which can make it easy to work with the existing http routers and chaining libraries. With AWS's native support for golang wrapper, shims like nodejs or python is no longer needed.
 
 In short, the usage is
 ```go
@@ -25,13 +25,13 @@ func main() {
 ```
 
 ### The Full Picture
-To use it in the real project we might need some more setups
- 1. AWS APIGateway **must** be configured with lambda **proxy** mode, typically like {/proxy+} here's the [doc](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html) from aws
+To use it in the real project it might need some more setups
+ 1. AWS APIGateway **must** be configured with lambda **proxy** mode, typically {/proxy+} here's the [doc](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html) from aws
  2. Using any http router such as lightning fast [Bone](https://github.com/go-zoo/bone) or popular and feature rich [Gorilla Mux](https://github.com/gorilla/mux) and even with chaining libraries like [Alice](https://github.com/justinas/alice) to write your middlewares
 
 
 ### A complex example
-You can deploy this code to aws lambda and link it to apigateway to see how it works in test console of aws apigateway.
+You can deploy this code to aws lambda and link it to apigateway to see how it works in the test console of aws apigateway.
 ```go
 func handler1(w http.ResponseWriter, r *http.Request) {
     p1 := bone.GetValue(r, "var")
@@ -63,7 +63,7 @@ func main() {
 ```
 
 ### Support both standard http server and the lambda environment
-It is a common scenario that debugging programs with local servers. However, aws lambda and apigateway have limited this possibility. We must upload the code and wait logs coming out in cloudwatch, which is slow and inconvenient. This library provides a little wrapper func for writing back data that can help to identify the real type of http.ResponseWriter and invoke corresponding write function.
+It is a common scenario that debugging programs with local servers. However, aws lambda and apigateway have limited this possibility. We must upload the code and wait for the logs coming out in the cloudwatch, which is slow and inconvenient. This library provides a little wrapper func to write back data that can help to identify the real type of http.ResponseWriter and invoke corresponding write function.
 ```go
 func handlerTest(w http.ResponseWriter, r *http.Request) { //you can pass this handler to a standard local http server
     //your code...
