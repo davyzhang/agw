@@ -19,7 +19,7 @@ func main() {
     //like 	"github.com/gorilla/mux"
     mux := mux.NewRouter()
     mux.HandleFunc("/test1/hello", testhandler)
-    //lambda is from official sdk "github.com/aws/aws-lambda-go/lambda"
+    //lambda is from official sdk "https://github.com/aws/aws-lambda-go"
     lambda.Start(agw.Handler(mux))
 }
 ```
