@@ -136,7 +136,7 @@ func Process(agp EventParser, h http.Handler) interface{} {
 
 func WriteResponse(w http.ResponseWriter, i interface{}, isBase64 bool) (int, error) {
 	t := reflect.TypeOf(w).String()
-	if t == "*http.response" { //dirty hack to get internal type
+	if t == "*http.response" || t == "*httptest.ResponseRecorder" { //dirty hack to get internal type
 		switch i.(type) {
 		case []byte:
 			return w.Write(i.([]byte))
