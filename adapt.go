@@ -154,3 +154,15 @@ func WriteResponse(w http.ResponseWriter, i interface{}, isBase64 bool) (int, er
 	}
 	return 0, nil
 }
+
+func (lpr *LPResponse) Status() int {
+	return lpr.status
+}
+
+func (lpr *LPResponse) Body() interface{} {
+	return lpr.body
+}
+
+func (lpr *LPResponse) Headers() http.Header {
+	return lpr.header
+}
